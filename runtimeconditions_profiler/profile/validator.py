@@ -101,6 +101,14 @@ def validate_condition(
             add,
         )
         for op_index, operation in enumerate(operations):
+            if isinstance(operation, str):
+                # An operation named with a plain string, such as the smtp interface's "send".
+                expect_profile_count(
+                    vocabulary.field_value_count("interface.operations[]", kind, interface_type, operation),
+                    f"{prefix}.interface.operations[{op_index}] {operation} for {kind}/{interface_type}",
+                    add,
+                )
+                continue
             if not isinstance(operation, dict):
                 continue
             for field, value in operation.items():
