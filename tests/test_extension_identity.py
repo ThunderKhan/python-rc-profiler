@@ -105,3 +105,34 @@ def test_string_dependencies_resolve_to_their_definitions() -> None:
     closure: set[tuple[str, str]] = set()
     add_extension_closure((TOP, "v1"), {key: value.dependencies for key, value in definitions.items()}, closure)
     assert closure == {(BASE, "v1"), (TOP, "v1")}
+
+
+MAIL = "https://example.test/rc/mail/v1/runtimeconditions.extension.yaml"
+
+
+def test_validator_checks_operations_written_as_strings() -> None:
+    from types import SimpleNamespace
+
+    from runtimeconditions_profiler.extension.definition import parse_extension_definition
+    from runtimeconditions_profiler.profile.validator import ProfileValidator
+
+    spec = {
+        "kinds": [{"name": "api"}],
+        "interfaceTypes": [{"name": "smtp", "targetKind": "api"}],
+        "interfaceFields": [{"name": "operations", "targetKind": "api", "targetType": "smtp"}],
+        "fieldValues": [{"field": "interface.operations[]", "targetKind": "api", "targetType": "smtp", "values": ["send"]}],
+    }
+    definition = parse_extension_definition({"metadata": {"id": MAIL, "version": "v1"}, "spec": spec}, MAIL, MAIL)
+    discovery = SimpleNamespace(validated_artifacts=[], sdk_extensions=[SimpleNamespace(id=MAIL, version="v1", definition=definition)])
+
+    def messages(operations: list[str]) -> list[str]:
+        profile = {
+            "apiVersion": "runtimeconditions.io/v1alpha1",
+            "kind": "RuntimeConditionsProfile",
+            "extensions": ["https://example.test/rc/mail:v1"],
+            "conditions": [{"kind": "api", "interface": {"type": "smtp", "operations": operations}}],
+        }
+        return [item.message for item in ProfileValidator().validate(profile, discovery)]
+
+    assert not [m for m in messages(["send"]) if "operations" in m]
+    assert any("interface.operations[0] receive for api/smtp" in m for m in messages(["receive"]))
