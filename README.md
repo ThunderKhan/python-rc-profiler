@@ -86,10 +86,6 @@ validation-only dependencies remain in the checked closure. An error exits
 nonzero and leaves an existing output file untouched. Omit `--out` to print
 the profile to standard output.
 
-Use the `profile` subcommands for generated bindings. The older top-level
-`generate`, `discover`, and `mappings` commands belong to a separate legacy
-mapping workflow.
-
 ## Extension IDs and remote resolution
 
 Each Profile `extensions` item is a string containing the extension's required

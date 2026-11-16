@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterable
 
 from ..errors import RuntimeConditionsError
 
@@ -25,10 +24,6 @@ def parse_identifier(reference: object) -> tuple[str, str]:
     return identifier, version or ""
 
 
-def reference_object(reference: tuple[str, str]) -> dict[str, str]:
-    return {"id": reference[0], "version": reference[1]}
-
-
 EXTENSION_FILENAME = "runtimeconditions.extension.yaml"
 
 
@@ -43,13 +38,6 @@ def short_identifier(identifier: str, version: str) -> str:
     return identifier
 
 
-def expand_identifier(identifier: str, version: str) -> str:
-    """Rebuild the full extension id from a short https reference; anything else is returned as is."""
-    if version and identifier.startswith("https://") and not identifier.endswith("/" + EXTENSION_FILENAME):
-        return f"{identifier}/{version}/{EXTENSION_FILENAME}"
-    return identifier
-
-
 def profile_reference(reference: tuple[str, str]) -> str:
     """Serialize an extension reference for a Runtime Conditions Profile as <short-url>:<version>."""
     identifier, version = reference
@@ -61,16 +49,3 @@ def definition_identifier(metadata: dict[str, object]) -> str:
     """Return the ID declared by valid extension metadata."""
     return parse_identifier(metadata)[0]
 
-
-def resolve_reference(reference: tuple[str, str], known: Iterable[tuple[str, str]]) -> tuple[str, str]:
-    """Pair a dependency written as a bare id with its version.
-
-    Extension dependencies name an extension by its full id string, which carries no
-    version suffix. When the id matches exactly one known (id, version), return that;
-    otherwise return the reference unchanged.
-    """
-    keys = list(known)
-    if reference in keys or reference[1]:
-        return reference
-    matches = [key for key in keys if key[0] == reference[0]]
-    return matches[0] if len(matches) == 1 else reference

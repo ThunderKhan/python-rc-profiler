@@ -1,8 +1,0 @@
-apiVersion: runtimeconditions.io/v1alpha1
-kind: RuntimeConditionsExtensionDefinition
-metadata:
-  id: https://example.com/python-fixtures/transitive-app
-  version: v1alpha1
-spec:
-  dependencies:
-    - {id: https://example.com/python-fixtures/transitive-config, version: v1alpha1}

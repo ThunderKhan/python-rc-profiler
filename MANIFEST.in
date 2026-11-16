@@ -2,7 +2,6 @@ include README.md CONFORMANCE.md
 recursive-include scripts *.py
 recursive-include requirements *.txt
 recursive-include tests *.py
-recursive-include testdata *.py *.yaml *.toml *.md py.typed
 exclude runtimeconditions_profiler/runtimeconditions.profile.v0.1.0.schema.yaml
 prune archive
 prune build
