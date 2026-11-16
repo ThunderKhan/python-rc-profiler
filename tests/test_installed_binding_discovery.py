@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from runtimeconditions_profiler.extension.identity import parse_identifier, reference_object
+from runtimeconditions_profiler.extension.identity import parse_identifier
 
 import sys
 import json

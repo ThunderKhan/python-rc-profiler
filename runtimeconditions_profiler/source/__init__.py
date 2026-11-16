@@ -1,11 +1,5 @@
-from .inspector import SourceInspector
-from .python import PythonSourceIndex, expression_name, literal_string, workload_source_files
+"""Where the profiler looks for the workload's source files."""
 
-__all__ = [
-    "PythonSourceIndex",
-    "SourceInspector",
-    "expression_name",
-    "literal_string",
-    "workload_source_files",
-]
+from .python import workload_source_files
 
+__all__ = ["workload_source_files"]
