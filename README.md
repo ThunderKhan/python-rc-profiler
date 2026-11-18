@@ -7,38 +7,38 @@ finds those distributions through Python package metadata, reads their fixed
 binding resources, and analyzes your source without importing the bindings or
 running the application. Python 3.11 or newer is required.
 
-## Install from a package index
+## Install
 
-Create an environment for the workload and install the profiler and the
-binding distributions that your code imports. Resolve distributions by package
-name and version from PyPI or your organization's configured Python package
-index. The example names and version below are illustrative:
+The profiler is published to PyPI as `runtimeconditions-profiler`. Install it **into the same virtual
+environment as the binding distributions your workload imports**, because it finds them through that
+environment's package metadata. Do not use `pipx`, which would give it an environment of its own.
 
 ```sh
 PROFILE_ENV=/Users/alex/.venvs/orders-profile
 PROJECT_DIR=/Users/alex/work/orders
 python3 -m venv "$PROFILE_ENV"
 "$PROFILE_ENV/bin/python" -m pip install \
-  runtimeconditions-profiler==0.1.0 \
-  acme-runtimeconditions-jobs==1.2.3
+  runtimeconditions-profiler \
+  runtimeconditions-common-integrations \
+  runtimeconditions-env-configuration
 ```
 
-Keep `PROFILE_ENV` and `PROJECT_DIR` set in the same shell for the commands
-below.
+Keep `PROFILE_ENV` and `PROJECT_DIR` set in the same shell for the commands below. The bindings are
+resolved by name and version from PyPI, or from your organization's configured Python package index.
+`runtimeconditions-common-integrations` and `runtimeconditions-env-configuration` are the first-party
+ones; a binding for another extension comes from whoever publishes it.
 
-The binding publisher must include Python distribution metadata and these four
-resources at the installed import package's fixed location:
-`runtimeconditions.bindings.yaml`, `runtimeconditions.binding-model.yaml`,
-`runtimeconditions.extension.yaml`, and
-`runtimeconditions.binding-release.yaml`. The profiler verifies their package
-ownership, identities, versions, digests, and dependency closure. Installing
-loose generated `.py` files does not provide that contract.
+A binding distribution must include Python distribution metadata and these four resources at the
+installed import package's fixed location: `runtimeconditions.bindings.yaml`,
+`runtimeconditions.binding-model.yaml`, `runtimeconditions.extension.yaml`, and
+`runtimeconditions.binding-release.yaml`. The profiler verifies their package ownership, identities,
+versions, digests, and dependency closure. Installing loose generated `.py` files does not provide that
+contract. No `extensions` repository checkout, local binding file path, editable install, or
+checkout-based `PYTHONPATH` is part of this workflow.
 
-The Phase 4 fixtures are test-only; the profiler and example binding names in
-this command are not currently public PyPI releases. An end-user release needs
-the publisher to make the profiler and bindings available through a configured
-package index. No `extensions` repository checkout, local binding file path,
-editable install, or checkout-based `PYTHONPATH` is part of this workflow.
+With the [`rc` CLI](https://github.com/runtimeconditions/rc-cli), put the environment's `bin` directory on
+`PATH` (or set `RC_PYTHON_PROFILER` to the script) and run `rc profile python generate ...`; everything
+after `python` goes to this profiler unchanged.
 
 ## Declare conditions in your workload
 
