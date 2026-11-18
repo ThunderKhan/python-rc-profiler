@@ -892,3 +892,86 @@ def test_cli_preserves_existing_output_if_atomic_replace_fails(
     assert "replace failed" in capsys.readouterr().err
     assert output.read_text() == "previous result\n"
     assert sorted(path.name for path in tmp_path.iterdir()) == ["profile.yaml", "workload"]
+
+
+def run_cli(args: list[str], capsys: pytest.CaptureFixture[str]) -> tuple[int, str, str]:
+    status = cli.main(args)
+    captured = capsys.readouterr()
+    return status, captured.out, captured.err
+
+
+def test_version_reports_the_core_schema_the_rc_command_looks_for(capsys: pytest.CaptureFixture[str]) -> None:
+    status, out, _ = run_cli(["--version", "--json"], capsys)
+    document = json.loads(out)
+    assert status == 0 and out.count("\n") == 1 and " " not in out
+    assert document == {"name": "runtimeconditions-python-profiler", "version": cli.version(), "coreSchemas": [CORE_VERSION]}
+    status, out, _ = run_cli(["--version"], capsys)
+    assert (status, out) == (0, cli.version() + "\n")
+
+
+def generated_profile(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, args: list[str], source: str, name: str = "workload") -> str:
+    workload = tmp_path / name
+    workload.mkdir()
+    (workload / "app.py").write_text(source)
+    monkeypatch.setattr(cli, "verified_installed_bindings", lambda project: semantic_set(base_semantic_package()))
+    output = tmp_path / f"{name}.yaml"
+    assert cli.main([*args, "--project", str(workload), "--name", "sample", "--workload-uri", "example/sample", "--out", str(output)]) == 0
+    return output.read_text(encoding="utf-8")
+
+
+SERVICE = "import example_binding as b\nb.service(b.Http())\n"
+
+
+def test_the_profile_prefix_is_optional_so_rc_can_pass_subcommands_straight_through(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    with_prefix = generated_profile(tmp_path, monkeypatch, ["profile", "generate"], SERVICE, "a")
+    without = generated_profile(tmp_path, monkeypatch, ["generate"], SERVICE, "b")
+    assert with_prefix == without and "kind: service" in with_prefix
+
+
+def test_the_workload_version_is_optional_and_left_out_when_not_given(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    without = yaml.safe_load(generated_profile(tmp_path, monkeypatch, ["generate"], SERVICE, "a"))
+    assert without["workload"] == {"uri": "example/sample"}
+    given = yaml.safe_load(generated_profile(tmp_path, monkeypatch, ["generate", "--workload-version", "2.4.0"], SERVICE, "b"))
+    assert given["workload"] == {"uri": "example/sample", "version": "2.4.0"}
+
+
+def test_the_profile_is_laid_out_like_the_other_profilers_write_it(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    text = generated_profile(tmp_path, monkeypatch, ["generate", "--workload-version", "1"], SERVICE)
+    assert text == (
+        "apiVersion: runtimeconditions.io/v1alpha1\n"
+        "kind: RuntimeConditionsProfile\n"
+        "metadata:\n  name: sample\n"
+        "workload:\n  uri: example/sample\n  version: '1'\n"
+        "extensions:\n  - https://example.test/base:1.0.0:1.0.0\n"
+        "conditions:\n  - kind: service\n    interface:\n      type: http\n"
+    )
+
+
+def test_the_yaml_writer_keeps_unicode_and_never_folds_a_long_value() -> None:
+    from runtimeconditions_profiler.yamlio import dump_yaml
+
+    long_value = "https://example.test/" + "a" * 200
+    text = dump_yaml({"café": "latte", "list": ["x", {"nested": [long_value]}]})
+    assert text == f"café: latte\nlist:\n  - x\n  - nested:\n      - {long_value}\n"
+
+
+def test_verify_bindings_says_which_packages_the_workload_imports_and_which_only_its_dependencies(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str],
+) -> None:
+    base = base_semantic_package()
+    extra = semantic_package("https://example.test/extra:1.0.0", "extra_binding", {"dependencies": [base.model["rootExtension"]["id"]]})
+    both = semantic_set(base, extra)
+    for package in both.packages:
+        package.model["metadata"] = {"semanticSha256": "0" * 64}
+    imported_extra_only = verify.VerifiedBindingSet(both.packages, (extra,))
+    monkeypatch.setattr(cli, "verified_installed_bindings", lambda project: imported_extra_only)
+    status, out, _ = run_cli(["verify-bindings", "--project", str(tmp_path)], capsys)
+    assert status == 0
+    by_name = {line.split()[1].split("==")[0]: line for line in out.splitlines()}
+    assert "(dependency)" not in by_name["extra_binding"]
+    assert by_name[base.installed.distribution].endswith("(dependency)")
+    status, out, _ = run_cli(["verify-bindings", "--project", str(tmp_path), "--json"], capsys)
+    assert {item["distribution"]: item["direct"] for item in json.loads(out)["packages"]} == {
+        "extra_binding": True, base.installed.distribution: False}

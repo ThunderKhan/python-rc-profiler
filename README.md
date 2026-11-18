@@ -76,15 +76,25 @@ where the profiler or binding packages were built:
   --out "$PROJECT_DIR/runtimeconditions.profile.yaml"
 ```
 
-`verify-bindings` lists the distributions and extension IDs found through
-workload imports; add `--json` for machine-readable output. `profile generate`
-uses the installed profiler's approved core schema and the verified extension
-definitions from the binding distributions. It validates the complete profile,
-including schemas from transitive dependencies, before atomically writing the
-YAML file. The profile lists extensions that directly contribute declarations;
-validation-only dependencies remain in the checked closure. An error exits
-nonzero and leaves an existing output file untouched. Omit `--out` to print
-the profile to standard output.
+`verify-bindings` lists the distributions found through workload imports, with
+the ones only a dependency of those marked `(dependency)`; add `--json` for
+machine-readable output, where each package has a `direct` flag. `profile
+generate` uses the installed profiler's approved core schema and the verified
+extension definitions from the binding distributions. It validates the complete
+profile, including schemas from transitive dependencies, before atomically
+writing the YAML file. The profile lists extensions that directly contribute
+declarations; validation-only dependencies remain in the checked closure. An
+error exits nonzero and leaves an existing output file untouched. Omit `--out`
+to print the profile to standard output.
+
+`--workload-version` is optional; without it the profile's `workload` has only
+its `uri`. The `profile` word is optional too, so `runtimeconditions-python-profiler
+generate ...` works, which lets the `rc` command pass its arguments straight
+through. `--version --json` prints the profiler's name, version, and the core
+profile schemas it emits, which `rc` checks before it runs the profiler.
+
+The profile is written the way the Go, TypeScript, and Java profilers write it,
+so the same declarations give the same YAML in every language.
 
 ## Extension IDs and remote resolution
 

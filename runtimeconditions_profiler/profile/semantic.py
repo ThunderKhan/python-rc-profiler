@@ -106,14 +106,14 @@ class GeneratedProfileValidator:
 
     def build(
         self, extracted: tuple[ExtractedCondition, ...],
-        name: str, workload_uri: str, workload_version: str,
+        name: str, workload_uri: str, workload_version: str | None = None,
     ) -> dict[str, Any]:
         direct = {extension for item in extracted for extension in item.direct_extensions}
         profile = {
             "apiVersion": API_VERSION,
             "kind": "RuntimeConditionsProfile",
             "metadata": {"name": name},
-            "workload": {"uri": workload_uri, "version": workload_version},
+            "workload": {"uri": workload_uri, **({"version": workload_version} if workload_version else {})},
             "extensions": [profile_reference(ref) for ref in sorted(direct)],
             "conditions": [item.condition for item in extracted],
         }
