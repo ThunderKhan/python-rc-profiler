@@ -95,9 +95,9 @@ def extract(tmp_path: Path, source: str, helper: str | None = None,
             addon: bool = False) -> tuple:
     workload = tmp_path / "workload"
     workload.mkdir()
-    (workload / "app.py").write_text(source, encoding = "utf-8")
+    (workload / "app.py").write_text(source, encoding="utf-8")
     if helper is not None:
-        (workload / "helper.py").write_text(helper, encoding = "utf-8")
+        (workload / "helper.py").write_text(helper, encoding="utf-8")
     packages = (package(),)
     if addon:
         packages += (package("addon_binding", "urn:example:addon", False),)
