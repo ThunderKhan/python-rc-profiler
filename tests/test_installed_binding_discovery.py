@@ -788,7 +788,7 @@ def test_semantic_errors_are_source_located(condition: dict[str, object], messag
     candidate = semantic_candidate(condition, "https://example.test/base:1.0.0")
     with pytest.raises(RuntimeConditionsError) as failure:
         GeneratedProfileValidator(bindings).build((candidate,), "sample", "example/sample", "1")
-    assert "/workload/app.py:3:1: conditions[0]" in str(failure.value)
+    assert "/workload/app.py:3:1: conditions[0]" in str(failure.value).replace("\\", "/")
     assert message in str(failure.value)
 
 
@@ -812,7 +812,7 @@ def test_semantic_validator_checks_complete_core_profile_and_duplicate_names() -
         GeneratedProfileValidator(bindings).build((candidate,), "", "example/sample", "1")
     with pytest.raises(RuntimeConditionsError, match="duplicate Condition name") as failure:
         GeneratedProfileValidator(bindings).build((candidate, candidate), "sample", "example/sample", "1")
-    assert "/workload/app.py:3:1: conditions[1]/name" in str(failure.value)
+    assert "/workload/app.py:3:1: conditions[1]/name" in str(failure.value).replace("\\", "/")
 
 
 def test_semantic_validator_checks_scoped_values_and_rejects_external_schema_refs() -> None:
