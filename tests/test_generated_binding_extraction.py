@@ -95,9 +95,9 @@ def extract(tmp_path: Path, source: str, helper: str | None = None,
             addon: bool = False) -> tuple:
     workload = tmp_path / "workload"
     workload.mkdir()
-    (workload / "app.py").write_text(source)
+    (workload / "app.py").write_text(source, encoding="utf-8")
     if helper is not None:
-        (workload / "helper.py").write_text(helper)
+        (workload / "helper.py").write_text(helper, encoding="utf-8")
     packages = (package(),)
     if addon:
         packages += (package("addon_binding", "urn:example:addon", False),)
@@ -171,7 +171,7 @@ def test_recognized_declarations_fail_with_source_and_coordinate(
     with pytest.raises(RuntimeConditionsError) as failure:
         extract(tmp_path, source)
     assert message in str(failure.value)
-    assert "/app.py:" in str(failure.value)
+    assert "/app.py:" in str(failure.value).replace("\\", "/")
     assert DECLARATION in str(failure.value) or SCHEMA in str(failure.value)
 
 
@@ -212,7 +212,7 @@ def test_conditional_local_reexport_does_not_hide_declaration(tmp_path: Path) ->
             "if enabled:\n    from helper import declare\ndeclare()\n",
             "from example_binding import service as declare\n",
         )
-    assert "/app.py:3:1" in str(failure.value)
+    assert "/app.py:3:1" in str(failure.value).replace("\\", "/")
 
 
 def test_local_star_import_fails_closed(tmp_path: Path) -> None:
@@ -233,4 +233,4 @@ def test_cross_module_cycle_is_source_located(tmp_path: Path) -> None:
     (workload / "helper.py").write_text("from app import region\n")
     with pytest.raises(RuntimeConditionsError, match="cyclic module reference|cyclic static reference") as failure:
         GeneratedBindingExtractor(VerifiedBindingSet((package(),), (package(),))).extract(workload)
-    assert "/app.py:3:" in str(failure.value)
+    assert "/app.py:3:" in str(failure.value).replace("\\", "/")
